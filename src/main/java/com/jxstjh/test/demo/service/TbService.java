@@ -14,4 +14,10 @@ public interface TbService {
      */
     String queryCoupon(String word) throws ApiException;
 
+    /**
+     * 物料查询
+     * @param word
+     * @return
+     */
+    String queryOption(String word) throws ApiException;
 }

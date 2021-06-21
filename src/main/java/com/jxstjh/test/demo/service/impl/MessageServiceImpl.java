@@ -1,10 +1,14 @@
 package com.jxstjh.test.demo.service.impl;
 
 import com.jxstjh.test.demo.service.MessageService;
+import com.jxstjh.test.demo.service.TbService;
 import com.jxstjh.test.demo.util.MessageDecrypt;
 import com.jxstjh.test.demo.util.MessageUtil;
 import com.jxstjh.test.demo.vx.VxTextMassage;
+import com.taobao.api.ApiException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +22,13 @@ import java.util.Map;
 @Slf4j
 @Service("messageService")
 public class MessageServiceImpl implements MessageService {
+
+    /**
+     * 注入淘宝服务
+     */
+    @Autowired
+    TbService tbService;
+
     @Override
     public String newMessageRequest(HttpServletRequest request) {
         String respMessage = null;
@@ -41,7 +52,7 @@ public class MessageServiceImpl implements MessageService {
                 }*/
                 //自动回复
                 VxTextMassage text = new VxTextMassage();
-                text.setContent("霍霍哈嘿"+content);
+                text.setContent(dealContent(content));
                 text.setToUserName(fromUserName);
                 text.setFromUserName(toUserName);
                 text.setCreateTime(new Date().getTime());
@@ -72,5 +83,26 @@ public class MessageServiceImpl implements MessageService {
             log.error("error......");
         }
         return respMessage;
+    }
+
+    /**
+     * 处理查询逻辑
+     * @param content
+     * @return
+     */
+    private String dealContent(String content) {
+        if (StringUtils.isBlank(content)) {
+            return "不要调戏我，输入有效的商品链接";
+        }
+        try {
+            String couponMsg = tbService.queryCoupon(content);
+            if (couponMsg == null || couponMsg.length() == 0 ) {
+                return "暂时找不到该商品的优惠卷哦，请点击公众号下方联系某某";
+            }
+            return couponMsg;
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return "暂时找不到该商品的优惠卷哦，请点击公众号下方联系某某";
+        }
     }
 }

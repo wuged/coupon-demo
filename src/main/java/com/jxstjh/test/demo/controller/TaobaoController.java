@@ -24,4 +24,9 @@ public class TaobaoController {
     public String get(String word) throws ApiException {
         return tbService.queryCoupon(word);
     }
+
+    @GetMapping("test")
+    public String test(String word) throws ApiException {
+        return tbService.queryOption(word);
+    }
 }

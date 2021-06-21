@@ -1,5 +1,6 @@
 package com.jxstjh.test.demo.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.jxstjh.test.demo.service.TbService;
@@ -17,9 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 /**
@@ -65,15 +64,105 @@ public class TbServiceImpl implements TbService {
     @Override
     public String queryCoupon(String word) throws ApiException {
         // 根据淘宝链接获取商品id
-        String itemId = getItemId(word);
+        // 根据消息分类
+        String itemId;
+        if (word.indexOf("https://m.tb.cn") > -1) {
+            itemId = getItemId(word);
+        } else {
+            return "";
+        }
         //构建系统参数
         TaobaoClient client = new DefaultTaobaoClient(url, appkey, appsecret);
         TbkItemInfoGetRequest req = new TbkItemInfoGetRequest();
         req.setNumIids(itemId);
         req.setPlatform(2L);
         TbkItemInfoGetResponse rsp = client.execute(req);
-        log.info(rsp.getBody());
-        return "";
+        if (!rsp.isSuccess()) {
+            return "";
+        }
+        //log.info("商品详情：" + rsp.getBody());
+        JSONObject jsonObject = JSONObject.parseObject(rsp.getBody());
+        JSONObject item = jsonObject.getJSONObject("tbk_item_info_get_response").getJSONObject("results").getJSONArray("n_tbk_item").getJSONObject(0);
+        String seller_id = item.getString("seller_id");
+        String title = item.getString("title");
+        TbkDgMaterialOptionalRequest optionalRequest = new TbkDgMaterialOptionalRequest();
+        optionalRequest.setSellerIds(seller_id);
+        optionalRequest.setQ(title);
+        optionalRequest.setAdzoneId(adzoneid);
+        TbkDgMaterialOptionalResponse optionalResponse = client.execute(optionalRequest);
+        if (!optionalResponse.isSuccess()) {
+            return "";
+        }
+        log.info("物料详情：" + optionalResponse.getBody());
+        JSONObject optionalJsonObject = JSONObject.parseObject(optionalResponse.getBody());
+        JSONObject optionalItem = optionalJsonObject.getJSONObject("tbk_dg_material_optional_response").getJSONObject("result_list").getJSONArray("map_data").getJSONObject(0);
+        String coupon_share_url = optionalItem.getString("coupon_share_url");
+        String url = optionalItem.getString("url");
+        // 现价
+        String zk_final_price = optionalItem.getString("zk_final_price");
+        // 优惠券
+        String coupon_amount = optionalItem.getString("coupon_amount");
+        if (coupon_amount == null) {
+            coupon_amount = "0";
+        }
+        // 券后价
+        String finalPrice = countFinalPrice(zk_final_price, coupon_amount);
+        // 如果有优惠券就用优惠券
+        if (coupon_share_url != null) {
+            url = coupon_share_url;
+        }
+        TbkTpwdCreateRequest createRequest = new TbkTpwdCreateRequest();
+        createRequest.setUrl("https:" + url);
+        TbkTpwdCreateResponse createResponse = client.execute(createRequest);
+        if (!createResponse.isSuccess()) {
+            return "";
+        }
+        // log.info("淘口令详情：" + optionalResponse.getBody());
+        JSONObject createJsonObject = JSONObject.parseObject(createResponse.getBody());
+        JSONObject createItem = createJsonObject.getJSONObject("tbk_tpwd_create_response").getJSONObject("data");
+        String password_simple = createItem.getString("password_simple");
+        // String model = createItem.getString("model");
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(title).append("\n")
+                .append("【现价】：").append(zk_final_price).append("\n");
+        if (!"0".equals(coupon_amount)) {
+            stringBuilder.append("【优惠金额】：").append(coupon_amount).append("\n")
+                    .append("【券后价】：").append(finalPrice).append("\n");
+        }
+        stringBuilder.append(password_simple).append("\n")
+                .append("——————————\n")
+                .append("【购买方法】：\n")
+                .append("1.长按选择一键复制\n")
+                .append("2.打开手机桃宝\n")
+                .append("——————————\n");
+        return stringBuilder.toString();
+    }
+
+    @Override
+    public String queryOption(String word) throws ApiException {
+        TaobaoClient client = new DefaultTaobaoClient(url, appkey, appsecret);
+        TbkDgMaterialOptionalRequest optionalRequest = new TbkDgMaterialOptionalRequest();
+        optionalRequest.setQ(word);
+        optionalRequest.setAdzoneId(adzoneid);
+        TbkDgMaterialOptionalResponse optionalResponse = client.execute(optionalRequest);
+        if (!optionalResponse.isSuccess()) {
+            return "";
+        }
+        log.info("物料详情：" + optionalResponse.getBody());
+        return optionalResponse.getBody();
+    }
+
+    /**
+     * 计算券后价
+     * @param origin
+     * @param coupon
+     * @return
+     */
+    private String countFinalPrice(String origin, String coupon) {
+        if (coupon == null) {
+            return origin;
+        }
+        return new BigDecimal(origin).subtract(new BigDecimal(coupon)).toString();
     }
 
     /**
