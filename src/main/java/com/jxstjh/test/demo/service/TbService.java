@@ -20,4 +20,11 @@ public interface TbService {
      * @return
      */
     String queryOption(String word) throws ApiException;
+
+    /**
+     * 根据淘口令获取商品id
+     * @param content
+     * @return
+     */
+    String queryItemId(String content);
 }

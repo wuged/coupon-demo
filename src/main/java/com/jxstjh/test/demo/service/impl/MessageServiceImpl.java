@@ -91,9 +91,6 @@ public class MessageServiceImpl implements MessageService {
      * @return
      */
     private String dealContent(String content) {
-        if (StringUtils.isBlank(content)) {
-            return "不要调戏我，输入有效的商品链接";
-        }
         try {
             String couponMsg = tbService.queryCoupon(content);
             if (couponMsg == null || couponMsg.length() == 0 ) {

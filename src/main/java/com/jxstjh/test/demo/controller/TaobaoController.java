@@ -25,8 +25,13 @@ public class TaobaoController {
         return tbService.queryCoupon(word);
     }
 
-    @GetMapping("test")
+    @GetMapping("/test")
     public String test(String word) throws ApiException {
         return tbService.queryOption(word);
+    }
+
+    @GetMapping("/id_query")
+    public String queryIdFromContent(String content) {
+        return tbService.queryItemId(content);
     }
 }

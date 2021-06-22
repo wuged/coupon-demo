@@ -3,6 +3,7 @@ package com.jxstjh.test.demo.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.jxstjh.test.demo.service.TbService;
 import com.jxstjh.test.demo.util.UrlAnalyzeUtil;
 import com.taobao.api.ApiException;
@@ -15,11 +16,15 @@ import com.taobao.api.response.TbkDgMaterialOptionalResponse;
 import com.taobao.api.response.TbkItemInfoGetResponse;
 import com.taobao.api.response.TbkTpwdCreateResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * @author wuge
@@ -54,6 +59,24 @@ public class TbServiceImpl implements TbService {
     private String url;
 
     /**
+     * 第三方接口
+     */
+    @Value("${third.api.url}")
+    private String thirdApiUrl;
+
+    /**
+     * 第三方接口密钥
+     */
+    @Value("${third.apikey}")
+    private String thirdApiKey;
+
+    /**
+     * 注入restTemplate
+     */
+    @Autowired
+    private RestTemplate restTemplate;
+
+    /**
      * 通过“taobao.tbk.item.info.get( 淘宝客-公用-淘宝客商品详情查询(简版) ) ”得到“seller_id”、“title”
      * 作为taobao.tbk.dg.material.optional( 淘宝客-推广者-物料搜索 )“seller_ids”、“q”的入参，得到“coupon_share_url”或“url”
      * 作为taobao.tbk.tpwd.create( 淘宝客-公用-淘口令生成 )“url”的入参
@@ -65,11 +88,15 @@ public class TbServiceImpl implements TbService {
     public String queryCoupon(String word) throws ApiException {
         // 根据淘宝链接获取商品id
         // 根据消息分类
-        String itemId;
-        if (word.indexOf("https://m.tb.cn") > -1) {
-            itemId = getItemId(word);
-        } else {
-            return "";
+        // 第三方查询
+        String itemId = queryItemId(word);
+        if (StringUtils.isBlank(itemId)) {
+            if (word.indexOf("https://m.tb.cn") > -1) {
+                // 本地查询：通过解析url
+                itemId = getItemId(word);
+            } else {
+                return "";
+            }
         }
         //构建系统参数
         TaobaoClient client = new DefaultTaobaoClient(url, appkey, appsecret);
@@ -150,6 +177,28 @@ public class TbServiceImpl implements TbService {
         }
         log.info("物料详情：" + optionalResponse.getBody());
         return optionalResponse.getBody();
+    }
+
+    @Override
+    public String queryItemId(String content) {
+        Map<String, String> params = Maps.newHashMap();
+        params.put("apikey", thirdApiKey);
+        params.put("content", content);
+        String result;
+        try {
+            result = restTemplate.postForObject(thirdApiUrl, params, String.class);
+            JSONObject jsonObject = JSONObject.parseObject(result);
+            Integer code = jsonObject.getInteger("code");
+            if (code == 200) {
+                return jsonObject.getString("data");
+            } else {
+                log.info("第三方接口报错：" + jsonObject.getString("msg"));
+                return "";
+            }
+        } catch (Exception e) {
+            log.info("第三方接口调用异常：" + e.getMessage());
+            return "";
+        }
     }
 
     /**
