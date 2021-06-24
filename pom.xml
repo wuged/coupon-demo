@@ -33,7 +33,7 @@
             <artifactId>xstream</artifactId>
             <version>1.4.9</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>com.taobao</groupId>
             <artifactId>sdk-java-auto_1616813031837</artifactId>
             <version>20210617</version>
@@ -42,6 +42,18 @@
             <groupId>com.taobao</groupId>
             <artifactId>sdk-java-auto_1616813031837-20210617</artifactId>
             <version>source</version>
+        </dependency>-->
+        <!--京东-->
+        <!--<dependency>
+            <groupId>com.jingdong</groupId>
+            <artifactId>open-api-sdk</artifactId>
+            <version>1.0</version>
+        </dependency>-->
+
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.13</version>
         </dependency>
         <!--<dependency>
             <groupId>mysql</groupId>

@@ -1,5 +1,6 @@
 package com.jxstjh.test.demo.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.taobao.api.ApiException;
 
 /**
@@ -12,7 +13,7 @@ public interface TbService {
      * 查询优惠
      * @param word
      */
-    String queryCoupon(String word) throws ApiException;
+    String queryCoupon(String word);
 
     /**
      * 物料查询
@@ -26,5 +27,5 @@ public interface TbService {
      * @param content
      * @return
      */
-    String queryItemId(String content);
+    JSONObject queryItemDetail(String content);
 }
