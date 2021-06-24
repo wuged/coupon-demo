@@ -1,7 +1,6 @@
 package com.jxstjh.test.demo.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.taobao.api.ApiException;
 
 /**
  * @author wuge
@@ -20,7 +19,7 @@ public interface TbService {
      * @param word
      * @return
      */
-    String queryOption(String word) throws ApiException;
+    /*String queryOption(String word) throws ApiException;*/
 
     /**
      * 根据淘口令获取商品id

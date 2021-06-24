@@ -7,11 +7,6 @@ import com.google.common.collect.Maps;
 import com.jxstjh.test.demo.service.JdService;
 import com.jxstjh.test.demo.service.TbService;
 import com.jxstjh.test.demo.util.UrlAnalyzeUtil;
-import com.taobao.api.ApiException;
-import com.taobao.api.DefaultTaobaoClient;
-import com.taobao.api.TaobaoClient;
-import com.taobao.api.request.TbkDgMaterialOptionalRequest;
-import com.taobao.api.response.TbkDgMaterialOptionalResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -232,7 +227,7 @@ public class TbServiceImpl implements TbService {
         return stringBuilder.toString();
     }*/
 
-    @Override
+    /*@Override
     public String queryOption(String word) throws ApiException {
         TaobaoClient client = new DefaultTaobaoClient(url, appkey, appsecret);
         TbkDgMaterialOptionalRequest optionalRequest = new TbkDgMaterialOptionalRequest();
@@ -244,7 +239,7 @@ public class TbServiceImpl implements TbService {
         }
         log.info("物料详情：" + optionalResponse.getBody());
         return optionalResponse.getBody();
-    }
+    }*/
 
     @Override
     public JSONObject queryItemDetail(String content) {

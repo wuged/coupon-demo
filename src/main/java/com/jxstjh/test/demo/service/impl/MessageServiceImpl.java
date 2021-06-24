@@ -5,9 +5,7 @@ import com.jxstjh.test.demo.service.TbService;
 import com.jxstjh.test.demo.util.MessageDecrypt;
 import com.jxstjh.test.demo.util.MessageUtil;
 import com.jxstjh.test.demo.vx.VxTextMassage;
-import com.taobao.api.ApiException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
