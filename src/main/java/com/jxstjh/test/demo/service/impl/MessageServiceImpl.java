@@ -64,7 +64,7 @@ public class MessageServiceImpl implements MessageService {
                 if (eventType.equals(MessageUtil.EVENT_TYPE_SUBSCRIBE)) {
                     //文本消息
                     VxTextMassage text = new VxTextMassage();
-                    text.setContent("谢谢你这么优秀还关注我！！");
+                    text.setContent(genMsg());
                     text.setToUserName(fromUserName);
                     text.setFromUserName(toUserName);
                     text.setCreateTime(new Date().getTime());
@@ -99,5 +99,23 @@ public class MessageServiceImpl implements MessageService {
             log.info(e.getMessage());
             return "暂时找不到该商品的优惠卷哦，请点击公众号下方联系某某";
         }
+    }
+
+    /**
+     * 关注自动回复
+     * @return
+     */
+    private String genMsg() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("欢迎关注正好想买\n");
+        sb.append("搜罗全网优惠，省钱即赚钱 \n\n");
+        sb.append("如何查卷：\n");
+        sb.append("1.复制商品链接\n");
+        sb.append("2.粘贴到公众号\n");
+        sb.append("3.将返回的优惠卷信息复制打开陶宝即可\n\n");
+        sb.append("如何反俐：\n");
+        sb.append("1.确认收货后，添加客服获取反俐虹包\n");
+        sb.append("客服vx号：zhxmfq");
+        return sb.toString();
     }
 }

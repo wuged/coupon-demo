@@ -20,7 +20,7 @@ public class JingdongController {
     private JdService jdService;
 
     @GetMapping
-    public String get(String word) {
-        return jdService.queryCoupon(word);
+    public String get(String q) {
+        return jdService.queryCoupon(q);
     }
 }

@@ -1,16 +1,15 @@
 package com.jxstjh.test.demo.service.impl;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.Maps;
 import com.jxstjh.test.demo.service.JdService;
+import com.jxstjh.test.demo.util.RestTemplateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
 /**
  * @author wuge
@@ -21,10 +20,22 @@ import java.util.Map;
 public class JdServiceImpl implements JdService {
 
     /**
-     * 第三方接口
+     * 商品详情接口
      */
-    @Value("${third.api.jd.url}")
-    private String thirdApiJdUrl;
+    @Value("${third.api.jd.item.detail.url}")
+    private String thirdApiJdItemDetailUrl;
+
+    /**
+     * 商品详情（含优惠券）接口
+     */
+    @Value("${third.api.jd.item.detail1.url}")
+    private String thirdApiJdItemDetail1Url;
+
+    /**
+     * 商品转链接口
+     */
+    @Value("${third.api.jd.change.url}")
+    private String thirdApiJdChangeUrl;
 
     /**
      * 第三方接口密钥
@@ -39,49 +50,64 @@ public class JdServiceImpl implements JdService {
     private String unionId;
 
     /**
+     * 京东联盟推广位id
+     */
+    @Value("${jd.position.id}")
+    private String positionId;
+
+    /**
      * 注入restTemplate
      */
     @Autowired
-    private RestTemplate restTemplate;
+    private RestTemplateUtil restTemplateUtil;
 
     @Override
     public String queryCoupon(String word) {
-        Map<String, Object> params = Maps.newHashMap();
-        params.put("apikey", thirdApiKey);
-        params.put("materialId", word);
-        params.put("unionId", unionId);
-        params.put("autoSearch", true);
-        params.put("type", 1);
-        String result;
-        try {
-            result = restTemplate.postForObject(thirdApiJdUrl, params, String.class);
-            JSONObject jsonObject = JSONObject.parseObject(result);
-            Integer code = jsonObject.getInteger("code");
-            if (code == 200) {
-                return dealJdCouponInfo(jsonObject);
-            } else {
-                log.info("第三方京东接口报错：" + jsonObject.getString("msg"));
-                return "";
-            }
-        } catch (Exception e) {
-            log.info("第三方京东接口调用异常：" + e.getMessage());
+        JSONObject jsonObject = restTemplateUtil.getForObject(thirdApiJdItemDetailUrl + "?appkey=" + thirdApiKey + "&content=" + word);
+        if (jsonObject == null) {
             return "";
         }
+        JSONObject item = jsonObject.getJSONObject("jd_union_open_goods_promotiongoodsinfo_query_response").getJSONObject("result").getJSONArray("data").getJSONObject(0);
+        String title = item.getString("goodsName");
+        String skuId = item.getString("skuId");
+        // 根据商品id查询详情
+
+        JSONObject jsonObject1 = restTemplateUtil.getForObject(thirdApiJdItemDetail1Url + "?appkey=" + thirdApiKey + "&skuIds=" + skuId);
+        if (jsonObject1 == null) {
+            return "";
+        }
+        JSONObject itemDetail = jsonObject1.getJSONObject("jd_union_open_goods_query_response").getJSONObject("result").getJSONArray("data").getJSONObject(0);
+        String materialUrl = itemDetail.getString("materialUrl");
+        JSONArray couponList = itemDetail.getJSONObject("couponInfo").getJSONArray("couponList");
+        String queryUrl = thirdApiJdChangeUrl + "?appkey=" + thirdApiKey
+                + "&materialId=" + materialUrl + "&unionId=" + unionId + "&positionId=" + positionId;
+        // 如果有优惠券就拼接优惠券查询
+        if (couponList != null && couponList.size() > 0) {
+            String link = couponList.getJSONObject(0).getString("link");
+            queryUrl += ("&couponUrl=" + link);
+        }
+        // 根据优惠券获取转链
+        JSONObject jsonObject2 = restTemplateUtil.getForObject(queryUrl);
+        if (jsonObject2 == null) {
+            return "";
+        }
+        String shortUrl = jsonObject2.getJSONObject("jd_union_open_promotion_byunionid_get_response").getJSONObject("result").getJSONObject("data").getString("shortURL");
+        return dealJdCouponInfo(itemDetail, shortUrl);
     }
+
+
 
     /**
      * 处理返回结果并返回优惠券信息
-     * @param jsonObject
+     * @param result
      * @return
      */
-    private String dealJdCouponInfo(JSONObject jsonObject) {
+    private String dealJdCouponInfo(JSONObject result, String shortUrl) {
         StringBuilder stringBuilder = new StringBuilder();
-        JSONObject result = jsonObject.getJSONObject("data");
         JSONObject priceInfo = result.getJSONObject("priceInfo");
         // 佣金信息
         JSONObject commissionInfo = result.getJSONObject("commissionInfo");
         String title = result.getString("skuName");
-        String shortURL = result.getString("shortURL");
         BigDecimal price = priceInfo.getBigDecimal("price");
         BigDecimal lowestCouponPrice = priceInfo.getBigDecimal("lowestCouponPrice");
         stringBuilder.append(title).append("\n")
@@ -96,7 +122,7 @@ public class JdServiceImpl implements JdService {
             stringBuilder.append("【预计返俐】：").append(multiply.toString()).append("\n");
         }
         stringBuilder.append("——————————\n")
-                .append("【抢购链接】：").append(shortURL).append("\n")
+                .append("【抢购链接】：").append(shortUrl).append("\n")
                 .append("——————————\n");
         return stringBuilder.toString();
     }
