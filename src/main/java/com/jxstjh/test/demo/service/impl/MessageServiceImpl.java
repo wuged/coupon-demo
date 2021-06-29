@@ -89,15 +89,18 @@ public class MessageServiceImpl implements MessageService {
      * @return
      */
     private String dealContent(String content) {
+        if (content.contains("代码")) {
+            return getCodeMsg();
+        }
         try {
             String couponMsg = tbService.queryCoupon(content);
             if (couponMsg == null || couponMsg.length() == 0 ) {
-                return "暂时找不到该商品的优惠卷哦，请点击公众号下方联系某某";
+                return "暂时找不到该商品的优惠卷哦，可能该商品暂无优惠";
             }
             return couponMsg;
         } catch (Exception e) {
             log.info(e.getMessage());
-            return "暂时找不到该商品的优惠卷哦，请点击公众号下方联系某某";
+            return "暂时找不到该商品的优惠卷哦，可能该商品暂无优惠";
         }
     }
 
@@ -112,10 +115,22 @@ public class MessageServiceImpl implements MessageService {
         sb.append("如何查卷：\n");
         sb.append("1.复制商品链接\n");
         sb.append("2.粘贴到公众号\n");
-        sb.append("3.将返回的优惠卷信息复制打开陶宝即可\n\n");
+        sb.append("3.将返回的优惠卷信息复制打开陶宝即可，京dong直接链接跳转购买\n\n");
         sb.append("如何反俐：\n");
         sb.append("1.确认收货后，添加客服获取反俐虹包\n");
         sb.append("客服vx号：zhxmfq");
+        return sb.toString();
+    }
+
+    /**
+     * 领取百度网盘代码
+     * @return
+     */
+    private String getCodeMsg() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("百度网盘提取\n");
+        sb.append("链接：https://pan.baidu.com/s/1AgpbNbnXyLKrEkhdsdrIYw \n");
+        sb.append("提取码：cpxv \n");
         return sb.toString();
     }
 }
